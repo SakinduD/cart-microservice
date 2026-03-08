@@ -1,0 +1,86 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# .github/workflows/deploy-aws.yml
+#
+# CI/CD pipeline: Build Docker image → Snyk security scan → Push to AWS ECR
+#                 → Deploy to ECS Fargate (force new deployment)
+#
+# Required GitHub repository secrets:
+#   AWS_ACCESS_KEY_ID       – IAM user key with ECR + ECS permissions
+#   AWS_SECRET_ACCESS_KEY   – IAM user secret
+#   AWS_REGION              – e.g. us-east-1
+#   ECR_REPOSITORY          – ECR repo name (e.g. cart-microservice)
+#   ECS_CLUSTER             – ECS cluster name
+#   ECS_SERVICE             – ECS service name
+#   SNYK_TOKEN              – Snyk API token (free tier)
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Build & Deploy to AWS ECS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # allow manual trigger
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+
+jobs:
+  # ── 1. Lint & Security ──────────────────────────────────────────────────
+  security:
+    name: Snyk Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true          # don't block deploy on warnings
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+  # ── 2. Build, Push & Deploy ─────────────────────────────────────────────
+  deploy:
+    name: Build & Deploy
+    needs: security
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag & push Docker image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+                        -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: Deploy to ECS (force new deployment)
+        run: |
+          aws ecs update-service \
+            --cluster ${{ secrets.ECS_CLUSTER }} \
+            --service ${{ secrets.ECS_SERVICE }} \
+            --force-new-deployment
