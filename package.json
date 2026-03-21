@@ -12,7 +12,13 @@
     "type": "git",
     "url": "git+https://github.com/SakinduD/cart-microservice.git"
   },
-  "keywords": ["microservice", "cart", "ecommerce", "express", "mongodb"],
+  "keywords": [
+    "microservice",
+    "cart",
+    "ecommerce",
+    "express",
+    "mongodb"
+  ],
   "author": "",
   "license": "ISC",
   "bugs": {
@@ -25,6 +31,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
     "express-validator": "^7.2.1",
+    "mongodb": "^7.1.0",
     "mongoose": "^8.9.5"
   },
   "devDependencies": {
