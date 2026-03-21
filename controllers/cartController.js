@@ -34,8 +34,9 @@ exports.addItem = async (req, res) => {
         req.headers
       );
 
-      productPrice = productData.price ?? 0;
-      productName = productData.name ?? 'Unknown Product';
+      const product = productData?.product || productData;
+      productPrice = product?.price ?? 0;
+      productName = product?.name ?? 'Unknown Product';
       console.log(
         `[addItem] Product fetched via gateway – name: ${productName}, price: ${productPrice}`
       );
