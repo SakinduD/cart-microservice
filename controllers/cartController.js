@@ -27,12 +27,8 @@ exports.addItem = async (req, res) => {
 
     // Fetch Product Details via Gateway
     try {
-      const productData = await callViaGateway(
-        'GET',
-        `/inventory/products/${encodeURIComponent(productId)}`,
-        {},
-        req.headers
-      );
+      const path = `/inventory/products/${encodeURIComponent(productId)}`;
+      const productData = await callViaGateway('GET', path, {}, req.headers);
 
       const product =
         productData?.product ||
@@ -40,15 +36,15 @@ exports.addItem = async (req, res) => {
         productData?.data ||
         productData;
 
-      productPrice = product?.price ?? 0;
+      productPrice = Number(product?.price ?? 0);
       productName = product?.name ?? 'Unknown Product';
 
       console.log(
-        `[addItem] Product fetched via gateway – id: ${product?._id || 'N/A'}, name: ${productName}, price: ${productPrice}`
+        `[addItem] Product fetched via gateway path ${path} – id: ${product?._id || 'N/A'}, name: ${productName}, price: ${productPrice}`
       );
     } catch (gatewayErr) {
       console.warn(
-        `[addItem] Product service unavailable via gateway (${gatewayErr.message}). Using fallback price.`
+        `[addItem] Product lookup failed on /inventory/products/${productId}: ${gatewayErr.message}. Using fallback values.`
       );
     }
 
