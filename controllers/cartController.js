@@ -29,16 +29,22 @@ exports.addItem = async (req, res) => {
     try {
       const productData = await callViaGateway(
         'GET',
-        `/inventory/products/${productId}`,
+        `/inventory/products/${encodeURIComponent(productId)}`,
         {},
         req.headers
       );
 
-      const product = productData?.product || productData;
+      const product =
+        productData?.product ||
+        productData?.data?.product ||
+        productData?.data ||
+        productData;
+
       productPrice = product?.price ?? 0;
       productName = product?.name ?? 'Unknown Product';
+
       console.log(
-        `[addItem] Product fetched via gateway – name: ${productName}, price: ${productPrice}`
+        `[addItem] Product fetched via gateway – id: ${product?._id || 'N/A'}, name: ${productName}, price: ${productPrice}`
       );
     } catch (gatewayErr) {
       console.warn(
