@@ -1,14 +1,3 @@
-/**
- * models/Cart.js – Mongoose schema & model for the Cart collection
- *
- * Schema design rationale:
- *   • userId is indexed for fast lookups (each user has exactly one cart).
- *   • items is an embedded subdocument array – simple for a microservice that
- *     owns its own data and doesn't need cross-collection joins.
- *   • total is a computed convenience field recalculated on every mutation.
- *   • updatedAt tracks the last modification timestamp.
- */
-
 const mongoose = require('mongoose');
 
 const cartItemSchema = new mongoose.Schema(
@@ -18,7 +7,7 @@ const cartItemSchema = new mongoose.Schema(
     quantity: { type: Number, required: true, min: 1 },
     price: { type: Number, required: true, default: 0 },
   },
-  { _id: true } // Mongoose generates _id for each sub-doc (useful for removal)
+  { _id: true }
 );
 
 const cartSchema = new mongoose.Schema(
@@ -28,14 +17,10 @@ const cartSchema = new mongoose.Schema(
     total: { type: Number, default: 0 },
   },
   {
-    timestamps: true, // adds createdAt & updatedAt automatically
+    timestamps: true,
   }
 );
 
-/**
- * Recalculate the cart total from items.
- * Called before every save so the total always stays in sync.
- */
 cartSchema.pre('save', function (next) {
   this.total = this.items.reduce(
     (sum, item) => sum + item.price * item.quantity,

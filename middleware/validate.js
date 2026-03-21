@@ -1,18 +1,6 @@
-/**
- * middleware/validate.js – Input validation rules (express-validator)
- *
- * Security rationale:
- *   • Validates & sanitizes every user-supplied field before it reaches
- *     the controller.  This prevents NoSQL injection, type-confusion, and
- *     ensures data integrity at the boundary.
- *   • validationResult is checked by a shared handler that returns 400
- *     with structured error details if any rule fails.
- */
-
 const { body, param, validationResult } = require('express-validator');
 const apiResponse = require('../helpers/apiResponse');
 
-// ── Shared error handler ───────────────────────────────────────────────────
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -21,9 +9,6 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
-// ── Rule sets ──────────────────────────────────────────────────────────────
-
-/** POST /cart/add */
 const addItemRules = [
   body('userId')
     .isString()
@@ -41,7 +26,6 @@ const addItemRules = [
   handleValidationErrors,
 ];
 
-/** DELETE /cart/remove */
 const removeItemRules = [
   body('userId')
     .isString()
@@ -56,7 +40,6 @@ const removeItemRules = [
   handleValidationErrors,
 ];
 
-/** GET /cart/:userId  &  DELETE /cart/clear/:userId */
 const userIdParamRules = [
   param('userId')
     .isString()
