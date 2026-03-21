@@ -1,13 +1,12 @@
-const axios = require('axios');
 const Cart = require('../models/Cart');
-const config = require('../config');
 const apiResponse = require('../helpers/apiResponse');
+const { callViaGateway } = require('../helpers/gatewayFunc');
 
 exports.getCart = async (req, res) => {
   try {
     const { userId } = req.params;
-    let cart = await Cart.findOne({ userId });
 
+    let cart = await Cart.findOne({ userId });
     if (!cart) {
       cart = await Cart.create({ userId, items: [] });
     }
@@ -26,19 +25,23 @@ exports.addItem = async (req, res) => {
     let productName = 'Unknown Product';
     let productPrice = 0;
 
+    // Fetch Product Details via Gateway
     try {
-      const productUrl = `${config.productServiceUrl}/products/${productId}`;
-      console.log(`[addItem] Calling Product service: ${productUrl}`);
-      const { data } = await axios.get(productUrl, { timeout: 5000 });
-
-      productPrice = data.price ?? data.data?.price ?? 0;
-      productName = data.name ?? data.data?.name ?? 'Unknown Product';
-      console.log(
-        `[addItem] Product fetched – name: ${productName}, price: ${productPrice}`
+      const productData = await callViaGateway(
+        'GET',
+        `/inventory/products/${productId}`,
+        {},
+        req.headers
       );
-    } catch (extErr) {
+
+      productPrice = productData.price ?? 0;
+      productName = productData.name ?? 'Unknown Product';
+      console.log(
+        `[addItem] Product fetched via gateway – name: ${productName}, price: ${productPrice}`
+      );
+    } catch (gatewayErr) {
       console.warn(
-        `[addItem] Product service unavailable (${extErr.message}). Using fallback price.`
+        `[addItem] Product service unavailable via gateway (${gatewayErr.message}). Using fallback price.`
       );
     }
 

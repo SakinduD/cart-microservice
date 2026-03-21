@@ -1,8 +1,7 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const config = require('./config');
+const { connectDB, port } = require('./config/db');
 const cartRoutes = require('./routes/cartRoutes');
 
 dotenv.config();
@@ -22,19 +21,11 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'cart-microservice' });
 });
 
-const MONGODB_URI = config.mongodbUri;
-
-if (!MONGODB_URI) {
-  console.error('FATAL: MONGODB_URI is not set in environment variables.');
-  process.exit(1);
-}
-
-mongoose
-  .connect(MONGODB_URI)
+connectDB()
   .then(() => {
     console.log('✔  MongoDB connected');
-    app.listen(config.port, () => {
-      console.log(`✔  Cart service running on port ${config.port}`);
+    app.listen(port, () => {
+      console.log(`✔  Cart service running on port ${port}`);
     });
   })
   .catch((err) => {
@@ -42,4 +33,4 @@ mongoose
     process.exit(1);
   });
 
-module.exports = app; // exported for potential testing
+module.exports = app; 
