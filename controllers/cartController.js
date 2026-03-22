@@ -27,7 +27,7 @@ exports.addItem = async (req, res) => {
 
     // Fetch Product Details via Gateway
     try {
-      const path = `/inventory/products/${encodeURIComponent(productId)}`;
+      const path = `/inventory/products/${productId}`;
       const productApi = await callViaGateway('GET', path, {}, req.headers);
 
       const productData = productApi?.data;
