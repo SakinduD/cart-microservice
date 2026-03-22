@@ -2,6 +2,33 @@ const Cart = require('../models/Cart');
 const apiResponse = require('../helpers/apiResponse');
 const { callViaGateway } = require('../helpers/gatewayFunc');
 
+const sanitizeTextInput = (value, fieldName) => {
+  if (typeof value !== 'string') {
+    return {
+      error: `${fieldName} must be a string`,
+      statusCode: 400,
+    };
+  }
+
+  const sanitizedValue = value.trim();
+
+  if (!sanitizedValue) {
+    return {
+      error: `${fieldName} is required`,
+      statusCode: 400,
+    };
+  }
+
+  if (sanitizedValue.includes('\0')) {
+    return {
+      error: `${fieldName} contains invalid characters`,
+      statusCode: 400,
+    };
+  }
+
+  return { value: sanitizedValue };
+};
+
 exports.getCart = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -30,12 +57,27 @@ exports.addItem = async (req, res) => {
       );
     }
 
+    const sanitizedUserId = sanitizeTextInput(userId, 'userId');
+    if (sanitizedUserId.error) {
+      return apiResponse.error(res, sanitizedUserId.error, sanitizedUserId.statusCode);
+    }
+
+    const sanitizedProductId = sanitizeTextInput(productId, 'productId');
+    if (sanitizedProductId.error) {
+      return apiResponse.error(res, sanitizedProductId.error, sanitizedProductId.statusCode);
+    }
+
+    const parsedQuantity = Number(quantity);
+    if (!Number.isInteger(parsedQuantity) || parsedQuantity < 1) {
+      return apiResponse.error(res, 'quantity must be a positive integer', 400);
+    }
+
     let productName = 'Unknown Product';
     let productPrice = 0;
 
     // Fetch Product Details via Gateway
     try {
-      const path = `/inventory/products/${productId}`;
+      const path = `/inventory/products/${sanitizedProductId.value}`;
       const productApi = await callViaGateway('GET', path, {}, req.headers);
 
       const productData = productApi?.product;
@@ -58,24 +100,24 @@ exports.addItem = async (req, res) => {
       return apiResponse.error(res, message, statusCode);
     }
 
-    let cart = await Cart.findOne({ userId });
+    let cart = await Cart.findOne({ userId: sanitizedUserId.value });
     if (!cart) {
-      cart = new Cart({ userId, items: [] });
+      cart = new Cart({ userId: sanitizedUserId.value, items: [] });
     }
 
     const existingIndex = cart.items.findIndex(
-      (item) => item.productId === productId
+      (item) => item.productId === sanitizedProductId.value
     );
 
     if (existingIndex > -1) {
-      cart.items[existingIndex].quantity += quantity;
+      cart.items[existingIndex].quantity += parsedQuantity;
       cart.items[existingIndex].price = productPrice;
       cart.items[existingIndex].name = productName;
     } else {
       cart.items.push({
-        productId,
+        productId: sanitizedProductId.value,
         name: productName,
-        quantity,
+        quantity: parsedQuantity,
         price: productPrice,
       });
     }
