@@ -74,6 +74,7 @@ exports.addItem = async (req, res) => {
 
     let productName = 'Unknown Product';
     let productPrice = 0;
+    let productImages = [];
 
     // Fetch Product Details via Gateway
     try {
@@ -88,6 +89,12 @@ exports.addItem = async (req, res) => {
 
       productPrice = Number(productData?.price ?? 0);
       productName = productData?.name ?? 'Unknown Product';
+      productImages = Array.isArray(productData?.images)
+        ? productData.images.map((image) => ({
+            url: image?.url ?? '',
+            publicId: image?.publicId ?? '',
+          }))
+        : [];
 
       console.log(
         `[addItem] Product fetched via gateway path ${path} – id: ${productData?._id || 'N/A'}, name: ${productName}, price: ${productPrice}`
@@ -113,12 +120,14 @@ exports.addItem = async (req, res) => {
       cart.items[existingIndex].quantity += parsedQuantity;
       cart.items[existingIndex].price = productPrice;
       cart.items[existingIndex].name = productName;
+      cart.items[existingIndex].images = productImages;
     } else {
       cart.items.push({
         productId: sanitizedProductId.value,
         name: productName,
         quantity: parsedQuantity,
         price: productPrice,
+        images: productImages,
       });
     }
 
