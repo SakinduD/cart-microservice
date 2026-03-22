@@ -1,11 +1,32 @@
 const axios = require('axios');
 
+function sanitizeGatewayPath(path) {
+  if (typeof path !== 'string') {
+    throw new Error('Gateway path must be a string');
+  }
+
+  const normalizedPath = path.trim();
+
+  if (!normalizedPath.startsWith('/')) {
+    throw new Error('Gateway path must start with /');
+  }
+
+  if (normalizedPath.includes('..') || normalizedPath.includes('\\')) {
+    throw new Error('Gateway path contains invalid traversal characters');
+  }
+
+  return normalizedPath;
+}
+
 // Helper: make authenticated call via gateway
 async function callViaGateway(method, path, data = {}, headers = {}) {
   try {
+    const safePath = sanitizeGatewayPath(path);
+    const requestUrl = new URL(safePath, process.env.GATEWAY_URL).toString();
+
     const config = {
       method,
-      url: `${process.env.GATEWAY_URL}${path}`,
+      url: requestUrl,
       headers: { Authorization: headers.authorization || '' }
     };
 
