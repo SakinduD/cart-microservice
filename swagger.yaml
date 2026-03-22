@@ -1,0 +1,258 @@
+openapi: 3.0.3
+info:
+  title: Cart Microservice API
+  version: 1.0.0
+  description: Simple Swagger spec for testing cart APIs.
+
+servers:
+  - url: /
+    description: Current host
+  - url: https://api-gateway.wonderfulpond-b48eec63.southeastasia.azurecontainerapps.io
+    description: API Gateway
+
+tags:
+  - name: Health
+  - name: Cart
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ApiSuccess:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Cart retrieved successfully
+        data:
+          type: object
+          nullable: true
+
+    ApiError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Cart not found
+        details:
+          nullable: true
+
+    CartItem:
+      type: object
+      properties:
+        productId:
+          type: string
+          example: 65e2f4b8a12cd34ef5678901
+        name:
+          type: string
+          example: Sample Product
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+        price:
+          type: number
+          format: float
+          example: 24.99
+        images:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+                example: https://cdn.example.com/item.jpg
+              publicId:
+                type: string
+                example: products/item-image
+
+    Cart:
+      type: object
+      properties:
+        userId:
+          type: string
+          example: 65e2f4b8a12cd34ef5678900
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        total:
+          type: number
+          format: float
+          example: 49.98
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  service:
+                    type: string
+                    example: cart-microservice
+
+  /cart/{userId}:
+    get:
+      tags: [Cart]
+      summary: Get a user's cart (creates one if missing)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cart retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Cart'
+        '401':
+          description: Unauthorized
+
+  /cart/add:
+    post:
+      tags: [Cart]
+      summary: Add item to cart
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, productId, quantity]
+              properties:
+                userId:
+                  type: string
+                  example: 65e2f4b8a12cd34ef5678900
+                productId:
+                  type: string
+                  example: 65e2f4b8a12cd34ef5678901
+                quantity:
+                  type: integer
+                  minimum: 1
+                  example: 1
+      responses:
+        '201':
+          description: Item added
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Cart'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Unauthorized
+
+  /cart/remove:
+    delete:
+      tags: [Cart]
+      summary: Remove item from cart
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, productId]
+              properties:
+                userId:
+                  type: string
+                  example: 65e2f4b8a12cd34ef5678900
+                productId:
+                  type: string
+                  example: 65e2f4b8a12cd34ef5678901
+      responses:
+        '200':
+          description: Item removed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Cart'
+        '404':
+          description: Cart or item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Unauthorized
+
+  /cart/clear/{userId}:
+    delete:
+      tags: [Cart]
+      summary: Clear all items from cart
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cart cleared
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Cart'
+        '404':
+          description: Cart not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Unauthorized

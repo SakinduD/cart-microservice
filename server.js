@@ -1,6 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
+const YAML = require('yamljs');
+const swaggerUi = require('swagger-ui-express');
 const { connectDB, port } = require('./config/db');
 const cartRoutes = require('./routes/cartRoutes');
 
@@ -13,6 +16,9 @@ app.use(express.json());
 app.use((req, _res, next) => {
   next();
 });
+
+const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use('/cart', cartRoutes);
 
