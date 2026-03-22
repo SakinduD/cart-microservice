@@ -22,19 +22,27 @@ exports.addItem = async (req, res) => {
   try {
     const { userId, productId, quantity } = req.body;
 
+    if (!userId || !productId || !quantity) {
+      return apiResponse.error(
+        res,
+        'userId, productId and quantity are required',
+        400
+      );
+    }
+
     let productName = 'Unknown Product';
     let productPrice = 0;
 
     // Fetch Product Details via Gateway
     try {
-      const path = `/inventory/products/${encodeURIComponent(productId)}`;
+      const path = `/inventory/products/${productId}`;
       const productApi = await callViaGateway('GET', path, {}, req.headers);
 
-      const productData =
-        productApi?.product ||
-        productApi?.data?.product ||
-        productApi?.data ||
-        productApi;
+      const productData = productApi?.product;
+
+      if (!productData) {
+        return apiResponse.error(res, 'Product not found', 404);
+      }
 
       productPrice = Number(productData?.price ?? 0);
       productName = productData?.name ?? 'Unknown Product';
@@ -43,9 +51,11 @@ exports.addItem = async (req, res) => {
         `[addItem] Product fetched via gateway path ${path} – id: ${productData?._id || 'N/A'}, name: ${productName}, price: ${productPrice}`
       );
     } catch (gatewayErr) {
-      console.warn(
-        `[addItem] Product lookup failed on /inventory/products/${productId}: ${gatewayErr.message}. Using fallback values.`
-      );
+      const statusCode = gatewayErr?.response?.status || 502;
+      const message =
+        gatewayErr?.response?.data?.message || 'Failed to fetch product details';
+      console.warn(`[addItem] Product lookup failed: ${gatewayErr.message}`);
+      return apiResponse.error(res, message, statusCode);
     }
 
     let cart = await Cart.findOne({ userId });
