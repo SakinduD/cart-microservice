@@ -72,7 +72,7 @@ exports.addItem = async (req, res) => {
       return apiResponse.error(res, 'quantity must be a positive integer', 400);
     }
 
-    let productName = 'Unknown Product';
+    let productName;
     let productPrice = 0;
 
     // Fetch Product Details via Gateway
