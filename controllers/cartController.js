@@ -27,10 +27,14 @@ exports.addItem = async (req, res) => {
 
     // Fetch Product Details via Gateway
     try {
-      const path = `/inventory/products/${productId}`;
+      const path = `/inventory/products/${encodeURIComponent(productId)}`;
       const productApi = await callViaGateway('GET', path, {}, req.headers);
 
-      const productData = productApi?.data;
+      const productData =
+        productApi?.product ||
+        productApi?.data?.product ||
+        productApi?.data ||
+        productApi;
 
       productPrice = Number(productData?.price ?? 0);
       productName = productData?.name ?? 'Unknown Product';
