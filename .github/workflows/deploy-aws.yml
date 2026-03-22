@@ -25,7 +25,7 @@ jobs:
         with:
           args: >
             -Dsonar.organization=sakindud
-            -Dsonar.projectKey=SakinduDinsara_cart-microservice
+            -Dsonar.projectKey=SakinduD_cart-microservice
 
       # Step 3: Login to Azure Container Registry
       - name: Login to ACR
