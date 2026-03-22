@@ -134,13 +134,25 @@ exports.removeItem = async (req, res) => {
   try {
     const { userId, productId } = req.body;
 
-    const cart = await Cart.findOne({ userId });
+    const sanitizedUserId = sanitizeTextInput(userId, 'userId');
+    if (sanitizedUserId.error) {
+      return apiResponse.error(res, sanitizedUserId.error, sanitizedUserId.statusCode);
+    }
+
+    const sanitizedProductId = sanitizeTextInput(productId, 'productId');
+    if (sanitizedProductId.error) {
+      return apiResponse.error(res, sanitizedProductId.error, sanitizedProductId.statusCode);
+    }
+
+    const cart = await Cart.findOne({ userId: sanitizedUserId.value });
     if (!cart) {
       return apiResponse.error(res, 'Cart not found', 404);
     }
 
     const initialLength = cart.items.length;
-    cart.items = cart.items.filter((item) => item.productId !== productId);
+    cart.items = cart.items.filter(
+      (item) => item.productId !== sanitizedProductId.value
+    );
 
     if (cart.items.length === initialLength) {
       return apiResponse.error(res, 'Item not found in cart', 404);
