@@ -97,9 +97,6 @@ exports.addItem = async (req, res) => {
           }))
         : [];
 
-      console.log(
-        `[addItem] Product fetched via gateway path ${path} – id: ${productData?._id || 'N/A'}, name: ${productName}, price: ${productPrice}`
-      );
     } catch (gatewayErr) {
       const statusCode = gatewayErr?.response?.status || 502;
       const message =
