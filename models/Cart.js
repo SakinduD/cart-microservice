@@ -6,6 +6,12 @@ const cartItemSchema = new mongoose.Schema(
     name: { type: String, default: 'Unknown Product' },
     quantity: { type: Number, required: true, min: 1 },
     price: { type: Number, required: true, default: 0 },
+    images: [
+      {
+        url: { type: String, trim: true },
+        publicId: { type: String, trim: true },
+      },
+    ],
   },
   { _id: true }
 );
