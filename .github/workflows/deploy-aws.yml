@@ -24,7 +24,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.organization=sakindudinsara
+            -Dsonar.organization=sakindud
             -Dsonar.projectKey=SakinduDinsara_cart-microservice
 
       # Step 3: Login to Azure Container Registry
